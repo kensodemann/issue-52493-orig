@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { PreferencesPage } from '@app/preferences/preferences.page';
 import { ModalController } from '@ionic/angular/standalone';
 import packageInfo from '../../../package.json';
@@ -18,6 +18,7 @@ import {
   IonLabel,
   IonNote,
 } from '@ionic/angular/standalone';
+import { StatusBar } from '@capacitor/status-bar';
 
 @Component({
   selector: 'app-about',
@@ -38,7 +39,7 @@ import {
     IonNote,
   ],
 })
-export class AboutPage {
+export class AboutPage implements OnInit {
   author: string;
   name: string;
   description: string;
@@ -50,6 +51,11 @@ export class AboutPage {
     this.description = packageInfo.description;
     this.version = packageInfo.version;
     addIcons({ settingsOutline });
+  }
+
+  async ngOnInit() {
+    await StatusBar.setBackgroundColor({ color: '#002648' });
+    await StatusBar.setOverlaysWebView({ overlay: false });
   }
 
   async openPreferences() {

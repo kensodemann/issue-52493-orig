@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { SplashScreen } from '@capacitor/splash-screen';
+import { StatusBar } from '@capacitor/status-bar';
 import { NavController } from '@ionic/angular/standalone';
 import { SessionVaultService } from './core';
 import { IonApp, IonRouterOutlet } from '@ionic/angular/standalone';
@@ -30,6 +31,8 @@ export class AppComponent implements OnInit {
   }
 
   async init() {
+    await StatusBar.setBackgroundColor({ color: '#002648' });
+    await StatusBar.setOverlaysWebView({ overlay: false });
     const hide = await this.sessionVault.isHidingContentsInBackground();
     this.sessionVault.hideContentsInBackground(hide);
   }
