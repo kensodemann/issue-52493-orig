@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { TeaService } from '@app/core';
+import { StatusBarService, TeaService } from '@app/core';
 import { Tea } from '@app/models';
 import { NavController } from '@ionic/angular/standalone';
 import { map, Observable, of } from 'rxjs';
@@ -46,6 +46,7 @@ export class TeaPage implements OnInit {
 
   constructor(
     private nav: NavController,
+    private statusBar: StatusBarService,
     private tea: TeaService,
   ) {}
 
@@ -53,6 +54,10 @@ export class TeaPage implements OnInit {
     this.teaMatrix$ = this.tea
       .getAll()
       .pipe(map((teas) => this.toMatrix(teas)));
+  }
+
+  ionViewDidEnter() {
+    this.statusBar.changeBackgroundTogray();
   }
 
   showDetailsPage(id: number) {

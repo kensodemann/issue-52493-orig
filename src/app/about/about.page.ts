@@ -1,24 +1,24 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
+import { StatusBarService } from '@app/core';
 import { PreferencesPage } from '@app/preferences/preferences.page';
-import { ModalController } from '@ionic/angular/standalone';
-import packageInfo from '../../../package.json';
-import { addIcons } from 'ionicons';
-import { settingsOutline } from 'ionicons/icons';
 import {
-  IonHeader,
-  IonToolbar,
-  IonTitle,
-  IonButtons,
   IonButton,
-  IonIcon,
+  IonButtons,
   IonContent,
-  IonList,
-  IonListHeader,
+  IonHeader,
+  IonIcon,
   IonItem,
   IonLabel,
+  IonList,
+  IonListHeader,
   IonNote,
+  IonTitle,
+  IonToolbar,
+  ModalController,
 } from '@ionic/angular/standalone';
-import { StatusBar } from '@capacitor/status-bar';
+import { addIcons } from 'ionicons';
+import { settingsOutline } from 'ionicons/icons';
+import packageInfo from '../../../package.json';
 
 @Component({
   selector: 'app-about',
@@ -39,13 +39,16 @@ import { StatusBar } from '@capacitor/status-bar';
     IonNote,
   ],
 })
-export class AboutPage implements OnInit {
+export class AboutPage {
   author: string;
   name: string;
   description: string;
   version: string;
 
-  constructor(private modalController: ModalController) {
+  constructor(
+    private modalController: ModalController,
+    private statusBar: StatusBarService,
+  ) {
     this.author = packageInfo.author;
     this.name = packageInfo.name;
     this.description = packageInfo.description;
@@ -53,16 +56,19 @@ export class AboutPage implements OnInit {
     addIcons({ settingsOutline });
   }
 
-  async ngOnInit() {
-    await StatusBar.setBackgroundColor({ color: '#002648' });
-    await StatusBar.setOverlaysWebView({ overlay: false });
+  ionViewDidEnter() {
+    console.log('about entered');
+    this.statusBar.changeBackgroundTograyForBooking();
   }
 
   async openPreferences() {
+    this.statusBar.updateModalBackground();
     const dlg = await this.modalController.create({
       backdropDismiss: false,
       component: PreferencesPage,
     });
     dlg.present();
+    await dlg.onDidDismiss();
+    this.statusBar.changeBackgroundTograyForBooking();
   }
 }

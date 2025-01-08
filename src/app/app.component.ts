@@ -1,10 +1,12 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { SplashScreen } from '@capacitor/splash-screen';
-import { StatusBar } from '@capacitor/status-bar';
-import { NavController } from '@ionic/angular/standalone';
-import { SessionVaultService } from './core';
-import { IonApp, IonRouterOutlet } from '@ionic/angular/standalone';
+import {
+  IonApp,
+  IonRouterOutlet,
+  NavController,
+} from '@ionic/angular/standalone';
+import { SessionVaultService, StatusBarService } from './core';
 
 @Component({
   selector: 'app-root',
@@ -16,6 +18,7 @@ export class AppComponent implements OnInit {
   constructor(
     navController: NavController,
     private sessionVault: SessionVaultService,
+    private statusBar: StatusBarService,
   ) {
     sessionVault.locked.subscribe(async (locked) => {
       if (locked) {
@@ -31,13 +34,12 @@ export class AppComponent implements OnInit {
   }
 
   async init() {
-    await StatusBar.setBackgroundColor({ color: '#002648' });
-    await StatusBar.setOverlaysWebView({ overlay: false });
     const hide = await this.sessionVault.isHidingContentsInBackground();
     this.sessionVault.hideContentsInBackground(hide);
   }
 
-  ngOnInit() {
-    SplashScreen.hide();
+  async ngOnInit() {
+    await SplashScreen.hide();
+    await this.statusBar.changeBackgroundToColor();
   }
 }

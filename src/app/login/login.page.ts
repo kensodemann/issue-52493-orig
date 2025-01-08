@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
-import { AuthenticationService } from '@app/core';
+import { AuthenticationService, StatusBarService } from '@app/core';
 import { NavController } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { logInOutline } from 'ionicons/icons';
@@ -45,8 +45,14 @@ export class LoginPage {
   constructor(
     private auth: AuthenticationService,
     private nav: NavController,
+    private statusBar: StatusBarService,
   ) {
     addIcons({ logInOutline });
+  }
+
+  ionViewDidEnter() {
+    console.log('login entered');
+    this.statusBar.changeBackgroundToColor();
   }
 
   async signIn() {

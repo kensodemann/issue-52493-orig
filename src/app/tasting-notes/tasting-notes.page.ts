@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { TastingNotesService } from '@app/core';
+import { StatusBarService, TastingNotesService } from '@app/core';
 import { TastingNote } from '@app/models';
 import {
   AlertController,
@@ -61,6 +61,7 @@ export class TastingNotesPage implements OnInit {
     private alertController: AlertController,
     private modalController: ModalController,
     private routerOutlet: IonRouterOutlet,
+    private statusBar: StatusBarService,
     private tastingNotes: TastingNotesService,
   ) {
     addIcons({ add });
@@ -68,6 +69,10 @@ export class TastingNotesPage implements OnInit {
 
   ngOnInit() {
     this.notes$ = this.refresh.pipe(mergeMap(() => this.tastingNotes.getAll()));
+  }
+
+  ionViewDidEnter() {
+    this.statusBar.changeBackgroundToColor();
   }
 
   async deleteNote(note: TastingNote): Promise<void> {
@@ -115,9 +120,11 @@ export class TastingNotesPage implements OnInit {
     if (note) {
       opt.componentProps = { note };
     }
+    this.statusBar.updateModalBackground();
     const modal = await this.modalController.create(opt);
     modal.present();
     await modal.onDidDismiss();
+    await this.statusBar.changeBackgroundToColor();
     this.refresh.next();
   }
 }
