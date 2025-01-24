@@ -72,7 +72,7 @@ export class TastingNotesPage implements OnInit {
   }
 
   ionViewDidEnter() {
-    this.statusBar.changeBackgroundToColor();
+    this.statusBar.changeBackgroundTogray();
   }
 
   async deleteNote(note: TastingNote): Promise<void> {

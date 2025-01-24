@@ -57,7 +57,7 @@ export class TeaPage implements OnInit {
   }
 
   ionViewDidEnter() {
-    this.statusBar.changeBackgroundTogray();
+    this.statusBar.changeBackgroundToColor();
   }
 
   showDetailsPage(id: number) {
