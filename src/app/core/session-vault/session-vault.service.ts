@@ -1,20 +1,9 @@
 import { Injectable } from '@angular/core';
-import { PinDialogComponent } from '@app/pin-dialog/pin-dialog.component';
 import { Capacitor } from '@capacitor/core';
 import { Preferences } from '@capacitor/preferences';
 import { AuthResult } from '@ionic-enterprise/auth';
-import {
-  BiometricPermissionState,
-  BrowserVault,
-  Device,
-  DeviceSecurityType,
-  IdentityVaultConfig,
-  Vault,
-  VaultType,
-} from '@ionic-enterprise/identity-vault';
 import { ModalController } from '@ionic/angular/standalone';
 import { Observable, Subject } from 'rxjs';
-import { VaultFactoryService } from './vault-factory.service';
 
 export type UnlockMode =
   | 'Biometrics'
@@ -23,18 +12,7 @@ export type UnlockMode =
   | 'CustomPasscode'
   | 'SecureStorage';
 
-const config: IdentityVaultConfig = {
-  key: 'com.ionic.teataster',
-  type: VaultType.SecureStorage,
-  deviceSecurityType: DeviceSecurityType.None,
-  lockAfterBackgrounded: 2000,
-  shouldClearVaultAfterTooManyFailedAttempts: true,
-  customPasscodeInvalidUnlockAttempts: 2,
-  unlockVaultOnLoad: false,
-};
-
 const sessionKey = 'auth-session';
-const hideInBackgroundKey = 'hide-in-background';
 const modeKey = 'mode-key';
 
 @Injectable({
@@ -42,15 +20,10 @@ const modeKey = 'mode-key';
 })
 export class SessionVaultService {
   private lockedSubject: Subject<boolean>;
-  private vault: Vault | BrowserVault;
   private platform: string;
 
-  constructor(
-    private modalController: ModalController,
-    vaultFactory: VaultFactoryService,
-  ) {
+  constructor(private modalController: ModalController) {
     this.platform = Capacitor.getPlatform();
-    this.vault = vaultFactory.create();
     this.lockedSubject = new Subject();
   }
 
@@ -58,88 +31,49 @@ export class SessionVaultService {
     return this.lockedSubject.asObservable();
   }
 
-  async initialize(): Promise<void> {
-    try {
-      await this.vault.initialize(config);
-    } catch {
-      await this.vault.clear();
-      await this.setUnlockMode('SecureStorage');
-    }
-
-    this.vault.onLock(() => {
-      this.lockedSubject.next(true);
-    });
-
-    this.vault.onUnlock(() => {
-      this.lockedSubject.next(false);
-    });
-
-    this.vault.onError((error) => {
-      console.error(error);
-    });
-
-    this.vault.onPasscodeRequested(async (isPasscodeSetRequest: boolean) =>
-      this.onPasscodeRequest(isPasscodeSetRequest),
-    );
-  }
+  async initialize(): Promise<void> {}
 
   async setSession(session: AuthResult): Promise<void> {
-    await this.vault.setValue(sessionKey, session);
+    await Preferences.set({ key: sessionKey, value: JSON.stringify(session) });
   }
 
   async getSession(): Promise<AuthResult | null> {
-    return this.vault.getValue(sessionKey);
+    const { value } = await Preferences.get({ key: sessionKey });
+    return value ? (JSON.parse(value) as AuthResult) : null;
   }
 
-  async lockVault() {
-    await this.vault.lock();
-  }
+  async lockVault() {}
 
-  async unlockVault() {
-    await this.vault.unlock();
-  }
+  async unlockVault() {}
 
   async canUnlock() {
-    const { value } = await Preferences.get({ key: modeKey });
-    return (
-      (value || 'SecureStorage') !== 'SecureStorage' &&
-      !(await this.vault.isEmpty()) &&
-      (await this.vault.isLocked())
-    );
+    return false;
   }
 
   canHideContentsInBackground(): boolean {
-    return this.platform !== 'web';
+    return false;
   }
 
   async canUseBiometrics(): Promise<boolean> {
-    return this.platform !== 'web' && (await Device.isBiometricsEnabled());
+    return false;
   }
 
   canUseCustomPasscode(): boolean {
-    return this.platform !== 'web';
+    return false;
   }
 
   async canUseSystemPasscode(): Promise<boolean> {
-    return this.platform !== 'web' && (await Device.isSystemPasscodeSet());
+    return false;
   }
 
-  async hideContentsInBackground(value: boolean): Promise<void> {
-    await Device.setHideScreenOnBackground(value, true);
-    return Preferences.set({
-      key: hideInBackgroundKey,
-      value: JSON.stringify(value),
-    });
-  }
+  async hideContentsInBackground(value: boolean): Promise<void> {}
 
   async isHidingContentsInBackground(): Promise<boolean> {
-    const { value } = await Preferences.get({ key: hideInBackgroundKey });
-    return JSON.parse(value || 'false');
+    return false;
   }
 
   async clear(): Promise<void> {
-    await this.vault.clear();
-    await this.setUnlockMode('SecureStorage');
+    await Preferences.clear();
   }
 
   async getUnlockMode(): Promise<UnlockMode> {
@@ -147,78 +81,7 @@ export class SessionVaultService {
     return (value as UnlockMode | null) || 'SecureStorage';
   }
 
-  private async provision(): Promise<void> {
-    if (
-      (await Device.isBiometricsAllowed()) === BiometricPermissionState.Prompt
-    ) {
-      try {
-        await Device.showBiometricPrompt({
-          iosBiometricsLocalizedReason: 'Please authenticate to continue',
-        });
-      } catch (error) {
-        console.error(error);
-      }
-    }
-  }
-
   async setUnlockMode(unlockMode: UnlockMode): Promise<void> {
-    let type: VaultType;
-    let deviceSecurityType: DeviceSecurityType;
-
-    switch (unlockMode) {
-      case 'Biometrics':
-        await this.provision();
-        type = VaultType.DeviceSecurity;
-        deviceSecurityType = DeviceSecurityType.Biometrics;
-        break;
-
-      case 'BiometricsWithPasscode':
-        await this.provision();
-        type = VaultType.DeviceSecurity;
-        deviceSecurityType = DeviceSecurityType.Both;
-        break;
-
-      case 'SystemPasscode':
-        type = VaultType.DeviceSecurity;
-        deviceSecurityType = DeviceSecurityType.SystemPasscode;
-        break;
-
-      case 'CustomPasscode':
-        type = VaultType.CustomPasscode;
-        deviceSecurityType = DeviceSecurityType.None;
-        break;
-
-      case 'SecureStorage':
-        type = VaultType.SecureStorage;
-        deviceSecurityType = DeviceSecurityType.None;
-        break;
-
-      default:
-        type = VaultType.SecureStorage;
-        deviceSecurityType = DeviceSecurityType.None;
-    }
-
-    await this.vault.updateConfig({
-      ...(this.vault.config as IdentityVaultConfig),
-      type,
-      deviceSecurityType,
-    });
-
     await Preferences.set({ key: modeKey, value: unlockMode });
-  }
-
-  private async onPasscodeRequest(
-    isPasscodeSetRequest: boolean,
-  ): Promise<void> {
-    const dlg = await this.modalController.create({
-      backdropDismiss: false,
-      component: PinDialogComponent,
-      componentProps: {
-        setPasscodeMode: isPasscodeSetRequest,
-      },
-    });
-    dlg.present();
-    const { data } = await dlg.onDidDismiss();
-    this.vault.setCustomPasscode(data || '');
   }
 }
